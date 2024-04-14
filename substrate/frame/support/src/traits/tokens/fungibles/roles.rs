@@ -21,11 +21,11 @@
 
 pub trait Inspect<AccountId>: super::Inspect<AccountId> {
 	// Get owner for an AssetId.
-	fn owner(asset: Self::AssetId) -> Option<AccountId>;
+	fn owner(asset: &Self::AssetId) -> Option<AccountId>;
 	// Get issuer for an AssetId.
-	fn issuer(asset: Self::AssetId) -> Option<AccountId>;
+	fn issuer(asset: &Self::AssetId) -> Option<AccountId>;
 	// Get admin for an AssetId.
-	fn admin(asset: Self::AssetId) -> Option<AccountId>;
+	fn admin(asset: &Self::AssetId) -> Option<AccountId>;
 	// Get freezer for an AssetId.
-	fn freezer(asset: Self::AssetId) -> Option<AccountId>;
+	fn freezer(asset: &Self::AssetId) -> Option<AccountId>;
 }
