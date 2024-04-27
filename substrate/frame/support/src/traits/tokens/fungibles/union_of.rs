@@ -47,7 +47,7 @@ pub struct UnionOf<Left, Right, Criterion, AssetKind, AccountId>(
 impl<
 		Left: fungibles::Inspect<AccountId>,
 		Right: fungibles::Inspect<AccountId, Balance = Left::Balance>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::Inspect<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -56,31 +56,31 @@ impl<
 	type Balance = Left::Balance;
 
 	fn total_issuance(asset: &Self::AssetId) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::total_issuance(&a),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::total_issuance(&a),
 		}
 	}
 	fn active_issuance(asset: &Self::AssetId) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::active_issuance(&a),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::active_issuance(&a),
 		}
 	}
 	fn minimum_balance(asset: &Self::AssetId) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::minimum_balance(&a),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::minimum_balance(&a),
 		}
 	}
 	fn balance(asset: &Self::AssetId, who: &AccountId) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::balance(&a, who),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::balance(&a, who),
 		}
 	}
 	fn total_balance(asset: &Self::AssetId, who: &AccountId) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::total_balance(&a, who),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::total_balance(&a, who),
 		}
@@ -91,7 +91,7 @@ impl<
 		preservation: Preservation,
 		force: Fortitude,
 	) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::reducible_balance(
 				&a,
 				who,
@@ -112,7 +112,7 @@ impl<
 		amount: Self::Balance,
 		provenance: Provenance,
 	) -> DepositConsequence {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) =>
 				<Left as fungibles::Inspect<AccountId>>::can_deposit(&a, who, amount, provenance),
 			Right(a) =>
@@ -124,13 +124,13 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> WithdrawConsequence<Self::Balance> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::can_withdraw(&a, who, amount),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::can_withdraw(&a, who, amount),
 		}
 	}
 	fn asset_exists(asset: &Self::AssetId) -> bool {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Inspect<AccountId>>::asset_exists(&a),
 			Right(a) => <Right as fungibles::Inspect<AccountId>>::asset_exists(&a),
 		}
@@ -140,7 +140,7 @@ impl<
 impl<
 		Left: fungibles::InspectHold<AccountId>,
 		Right: fungibles::InspectHold<AccountId, Balance = Left::Balance, Reason = Left::Reason>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::InspectHold<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -152,7 +152,7 @@ impl<
 		who: &AccountId,
 		force: Fortitude,
 	) -> Self::Balance {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) =>
 				<Left as fungibles::InspectHold<AccountId>>::reducible_total_balance_on_hold(
 					a, who, force,
@@ -164,14 +164,14 @@ impl<
 		}
 	}
 	fn hold_available(asset: Self::AssetId, reason: &Self::Reason, who: &AccountId) -> bool {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::InspectHold<AccountId>>::hold_available(a, reason, who),
 			Right(a) =>
 				<Right as fungibles::InspectHold<AccountId>>::hold_available(a, reason, who),
 		}
 	}
 	fn total_balance_on_hold(asset: Self::AssetId, who: &AccountId) -> Self::Balance {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::InspectHold<AccountId>>::total_balance_on_hold(a, who),
 			Right(a) => <Right as fungibles::InspectHold<AccountId>>::total_balance_on_hold(a, who),
 		}
@@ -181,7 +181,7 @@ impl<
 		reason: &Self::Reason,
 		who: &AccountId,
 	) -> Self::Balance {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::InspectHold<AccountId>>::balance_on_hold(a, reason, who),
 			Right(a) =>
 				<Right as fungibles::InspectHold<AccountId>>::balance_on_hold(a, reason, who),
@@ -193,7 +193,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> bool {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) =>
 				<Left as fungibles::InspectHold<AccountId>>::can_hold(a, reason, who, amount),
 			Right(a) =>
@@ -205,26 +205,26 @@ impl<
 impl<
 		Left: fungibles::InspectFreeze<AccountId>,
 		Right: fungibles::InspectFreeze<AccountId, Balance = Left::Balance, Id = Left::Id>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::InspectFreeze<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
 {
 	type Id = Left::Id;
 	fn balance_frozen(asset: Self::AssetId, id: &Self::Id, who: &AccountId) -> Self::Balance {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::InspectFreeze<AccountId>>::balance_frozen(a, id, who),
 			Right(a) => <Right as fungibles::InspectFreeze<AccountId>>::balance_frozen(a, id, who),
 		}
 	}
 	fn balance_freezable(asset: Self::AssetId, who: &AccountId) -> Self::Balance {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::InspectFreeze<AccountId>>::balance_freezable(a, who),
 			Right(a) => <Right as fungibles::InspectFreeze<AccountId>>::balance_freezable(a, who),
 		}
 	}
 	fn can_freeze(asset: Self::AssetId, id: &Self::Id, who: &AccountId) -> bool {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::InspectFreeze<AccountId>>::can_freeze(a, id, who),
 			Right(a) => <Right as fungibles::InspectFreeze<AccountId>>::can_freeze(a, id, who),
 		}
@@ -234,7 +234,7 @@ impl<
 impl<
 		Left: fungibles::Unbalanced<AccountId>,
 		Right: fungibles::Unbalanced<AccountId, Balance = Left::Balance>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::Unbalanced<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -243,7 +243,7 @@ impl<
 	where
 		Self: Sized,
 	{
-		match Criterion::convert(dust.0) {
+		match Criterion::convert(&dust.0) {
 			Left(a) =>
 				<Left as fungibles::Unbalanced<AccountId>>::handle_dust(fungibles::Dust(a, dust.1)),
 			Right(a) =>
@@ -255,13 +255,13 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> Result<Option<Self::Balance>, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Unbalanced<AccountId>>::write_balance(&a, who, amount),
 			Right(a) => <Right as fungibles::Unbalanced<AccountId>>::write_balance(&a, who, amount),
 		}
 	}
 	fn set_total_issuance(asset: &Self::AssetId, amount: Self::Balance) -> () {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Unbalanced<AccountId>>::set_total_issuance(&a, amount),
 			Right(a) => <Right as fungibles::Unbalanced<AccountId>>::set_total_issuance(&a, amount),
 		}
@@ -274,7 +274,7 @@ impl<
 		preservation: Preservation,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Unbalanced<AccountId>>::decrease_balance(
 				&a,
 				who,
@@ -299,7 +299,7 @@ impl<
 		amount: Self::Balance,
 		precision: Precision,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Unbalanced<AccountId>>::increase_balance(
 				&a, who, amount, precision,
 			),
@@ -313,7 +313,7 @@ impl<
 impl<
 		Left: fungibles::UnbalancedHold<AccountId>,
 		Right: fungibles::UnbalancedHold<AccountId, Balance = Left::Balance, Reason = Left::Reason>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::UnbalancedHold<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -324,7 +324,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::UnbalancedHold<AccountId>>::set_balance_on_hold(
 				a, reason, who, amount,
 			),
@@ -340,7 +340,7 @@ impl<
 		amount: Self::Balance,
 		precision: Precision,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::UnbalancedHold<AccountId>>::decrease_balance_on_hold(
 				a, reason, who, amount, precision,
 			),
@@ -356,7 +356,7 @@ impl<
 		amount: Self::Balance,
 		precision: Precision,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::UnbalancedHold<AccountId>>::increase_balance_on_hold(
 				a, reason, who, amount, precision,
 			),
@@ -370,7 +370,7 @@ impl<
 impl<
 		Left: fungibles::Mutate<AccountId>,
 		Right: fungibles::Mutate<AccountId, Balance = Left::Balance>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId: Eq,
 	> fungibles::Mutate<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -380,7 +380,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Mutate<AccountId>>::mint_into(&a, who, amount),
 			Right(a) => <Right as fungibles::Mutate<AccountId>>::mint_into(&a, who, amount),
 		}
@@ -392,7 +392,7 @@ impl<
 		precision: Precision,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) =>
 				<Left as fungibles::Mutate<AccountId>>::burn_from(&a, who, amount, precision, force),
 			Right(a) => <Right as fungibles::Mutate<AccountId>>::burn_from(
@@ -405,7 +405,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Mutate<AccountId>>::shelve(&a, who, amount),
 			Right(a) => <Right as fungibles::Mutate<AccountId>>::shelve(&a, who, amount),
 		}
@@ -415,7 +415,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Mutate<AccountId>>::restore(&a, who, amount),
 			Right(a) => <Right as fungibles::Mutate<AccountId>>::restore(&a, who, amount),
 		}
@@ -427,7 +427,7 @@ impl<
 		amount: Self::Balance,
 		preservation: Preservation,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Mutate<AccountId>>::transfer(
 				&a,
 				source,
@@ -446,7 +446,7 @@ impl<
 	}
 
 	fn set_balance(asset: &Self::AssetId, who: &AccountId, amount: Self::Balance) -> Self::Balance {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Mutate<AccountId>>::set_balance(&a, who, amount),
 			Right(a) => <Right as fungibles::Mutate<AccountId>>::set_balance(&a, who, amount),
 		}
@@ -456,7 +456,7 @@ impl<
 impl<
 		Left: fungibles::MutateHold<AccountId>,
 		Right: fungibles::MutateHold<AccountId, Balance = Left::Balance, Reason = Left::Reason>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::MutateHold<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -467,7 +467,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateHold<AccountId>>::hold(a, reason, who, amount),
 			Right(a) => <Right as fungibles::MutateHold<AccountId>>::hold(a, reason, who, amount),
 		}
@@ -479,7 +479,7 @@ impl<
 		amount: Self::Balance,
 		precision: Precision,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateHold<AccountId>>::release(
 				a, reason, who, amount, precision,
 			),
@@ -496,7 +496,7 @@ impl<
 		precision: Precision,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateHold<AccountId>>::burn_held(
 				a, reason, who, amount, precision, force,
 			),
@@ -515,7 +515,7 @@ impl<
 		mode: Restriction,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateHold<AccountId>>::transfer_on_hold(
 				a, reason, source, dest, amount, precision, mode, force,
 			),
@@ -534,7 +534,7 @@ impl<
 		preservation: Preservation,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateHold<AccountId>>::transfer_and_hold(
 				a,
 				reason,
@@ -562,7 +562,7 @@ impl<
 impl<
 		Left: fungibles::MutateFreeze<AccountId>,
 		Right: fungibles::MutateFreeze<AccountId, Balance = Left::Balance, Id = Left::Id>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::MutateFreeze<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -573,7 +573,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateFreeze<AccountId>>::set_freeze(a, id, who, amount),
 			Right(a) =>
 				<Right as fungibles::MutateFreeze<AccountId>>::set_freeze(a, id, who, amount),
@@ -585,7 +585,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) =>
 				<Left as fungibles::MutateFreeze<AccountId>>::extend_freeze(a, id, who, amount),
 			Right(a) =>
@@ -593,7 +593,7 @@ impl<
 		}
 	}
 	fn thaw(asset: Self::AssetId, id: &Self::Id, who: &AccountId) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::MutateFreeze<AccountId>>::thaw(a, id, who),
 			Right(a) => <Right as fungibles::MutateFreeze<AccountId>>::thaw(a, id, who),
 		}
@@ -627,7 +627,7 @@ impl<
 		Right: fungibles::HandleImbalanceDrop<RightAssetId, Balance>,
 		LeftAssetId,
 		RightAssetId,
-		Criterion: Convert<AssetKind, Either<LeftAssetId, RightAssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<LeftAssetId, RightAssetId>>,
 		AssetKind,
 		Balance,
 		AccountId,
@@ -644,7 +644,7 @@ impl<
 	>
 {
 	fn handle(asset: AssetKind, amount: Balance) {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => Left::handle(a, amount),
 			Right(a) => Right::handle(a, amount),
 		}
@@ -654,7 +654,7 @@ impl<
 impl<
 		Left: fungibles::Balanced<AccountId>,
 		Right: fungibles::Balanced<AccountId, Balance = Left::Balance>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::Balanced<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -686,7 +686,7 @@ impl<
 		value: Self::Balance,
 		precision: Precision,
 	) -> Result<fungibles::Debt<AccountId, Self>, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => <Left as fungibles::Balanced<AccountId>>::deposit(&a, who, value, precision)
 				.map(|debt| imbalance::from_fungibles(debt, asset.clone())),
 			Right(a) =>
@@ -695,7 +695,7 @@ impl<
 		}
 	}
 	fn issue(asset: &Self::AssetId, amount: Self::Balance) -> fungibles::Credit<AccountId, Self> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => {
 				let credit = <Left as fungibles::Balanced<AccountId>>::issue(&a, amount);
 				imbalance::from_fungibles(credit, asset.clone())
@@ -711,7 +711,7 @@ impl<
 		amount: Self::Balance,
 	) -> Result<(fungibles::Debt<AccountId, Self>, fungibles::Credit<AccountId, Self>), DispatchError>
 	{
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => {
 				let (a, b) = <Left as fungibles::Balanced<AccountId>>::pair(&a, amount)?;
 				Ok((
@@ -729,7 +729,7 @@ impl<
 		}
 	}
 	fn rescind(asset: &Self::AssetId, amount: Self::Balance) -> fungibles::Debt<AccountId, Self> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(asset) {
 			Left(a) => {
 				let debt = <Left as fungibles::Balanced<AccountId>>::rescind(&a, amount);
 				imbalance::from_fungibles(debt, asset.clone())
@@ -745,7 +745,7 @@ impl<
 		credit: fungibles::Credit<AccountId, Self>,
 	) -> Result<(), fungibles::Credit<AccountId, Self>> {
 		let asset = credit.asset();
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(&asset) {
 			Left(a) => {
 				let credit = imbalance::from_fungibles(credit, a);
 				<Left as fungibles::Balanced<AccountId>>::resolve(who, credit)
@@ -764,7 +764,7 @@ impl<
 		preservation: Preservation,
 	) -> Result<fungibles::Credit<AccountId, Self>, fungibles::Debt<AccountId, Self>> {
 		let asset = debt.asset();
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(&asset) {
 			Left(a) => {
 				let debt = imbalance::from_fungibles(debt, a);
 				match <Left as fungibles::Balanced<AccountId>>::settle(who, debt, preservation) {
@@ -789,7 +789,7 @@ impl<
 		preservation: Preservation,
 		force: Fortitude,
 	) -> Result<fungibles::Credit<AccountId, Self>, DispatchError> {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::Balanced<AccountId>>::withdraw(
 				a,
 				who,
@@ -815,7 +815,7 @@ impl<
 impl<
 		Left: fungibles::BalancedHold<AccountId>,
 		Right: fungibles::BalancedHold<AccountId, Balance = Left::Balance, Reason = Left::Reason>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::BalancedHold<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -826,7 +826,7 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> (fungibles::Credit<AccountId, Self>, Self::Balance) {
-		match Criterion::convert(asset.clone()) {
+		match Criterion::convert(&asset) {
 			Left(a) => {
 				let (credit, amount) =
 					<Left as fungibles::BalancedHold<AccountId>>::slash(a, reason, who, amount);
@@ -844,7 +844,7 @@ impl<
 impl<
 		Left: fungibles::Inspect<AccountId> + fungibles::Create<AccountId>,
 		Right: fungibles::Inspect<AccountId, Balance = Left::Balance> + fungibles::Create<AccountId>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> fungibles::Create<AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -855,7 +855,7 @@ impl<
 		is_sufficient: bool,
 		min_balance: Self::Balance,
 	) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) =>
 				<Left as fungibles::Create<AccountId>>::create(a, admin, is_sufficient, min_balance),
 			Right(a) => <Right as fungibles::Create<AccountId>>::create(
@@ -876,7 +876,7 @@ impl<
 				AccountId,
 				Balance = <Left as AccountTouch<Left::AssetId, AccountId>>::Balance,
 			>,
-		Criterion: Convert<AssetKind, Either<Left::AssetId, Right::AssetId>>,
+		Criterion: for<'a> Convert<&'a AssetKind, Either<Left::AssetId, Right::AssetId>>,
 		AssetKind: AssetId,
 		AccountId,
 	> AccountTouch<AssetKind, AccountId> for UnionOf<Left, Right, Criterion, AssetKind, AccountId>
@@ -884,21 +884,21 @@ impl<
 	type Balance = <Left as AccountTouch<Left::AssetId, AccountId>>::Balance;
 
 	fn deposit_required(asset: AssetKind) -> Self::Balance {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as AccountTouch<Left::AssetId, AccountId>>::deposit_required(a),
 			Right(a) => <Right as AccountTouch<Right::AssetId, AccountId>>::deposit_required(a),
 		}
 	}
 
 	fn should_touch(asset: AssetKind, who: &AccountId) -> bool {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as AccountTouch<Left::AssetId, AccountId>>::should_touch(a, who),
 			Right(a) => <Right as AccountTouch<Right::AssetId, AccountId>>::should_touch(a, who),
 		}
 	}
 
 	fn touch(asset: AssetKind, who: &AccountId, depositor: &AccountId) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as AccountTouch<Left::AssetId, AccountId>>::touch(a, who, depositor),
 			Right(a) =>
 				<Right as AccountTouch<Right::AssetId, AccountId>>::touch(a, who, depositor),
@@ -910,8 +910,8 @@ impl<
 		Left: fungibles::Inspect<AccountId> + fungibles::Refund<AccountId>,
 		Right: fungibles::Inspect<AccountId>
 			+ fungibles::Refund<AccountId, Balance = <Left as fungibles::Refund<AccountId>>::Balance>,
-		Criterion: Convert<
-			AssetKind,
+		Criterion: for<'a> Convert<
+			&'a AssetKind,
 			Either<
 				<Left as fungibles::Refund<AccountId>>::AssetId,
 				<Right as fungibles::Refund<AccountId>>::AssetId,
@@ -925,13 +925,13 @@ impl<
 	type Balance = <Left as fungibles::Refund<AccountId>>::Balance;
 
 	fn deposit_held(asset: AssetKind, who: AccountId) -> Option<(AccountId, Self::Balance)> {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::Refund<AccountId>>::deposit_held(a, who),
 			Right(a) => <Right as fungibles::Refund<AccountId>>::deposit_held(a, who),
 		}
 	}
 	fn refund(asset: AssetKind, who: AccountId) -> DispatchResult {
-		match Criterion::convert(asset) {
+		match Criterion::convert(&asset) {
 			Left(a) => <Left as fungibles::Refund<AccountId>>::refund(a, who),
 			Right(a) => <Right as fungibles::Refund<AccountId>>::refund(a, who),
 		}
